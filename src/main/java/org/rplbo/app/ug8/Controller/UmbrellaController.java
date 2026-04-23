@@ -11,10 +11,11 @@ import org.rplbo.app.ug8.UmbrellaApp;
 import org.rplbo.app.ug8.UmbrellaDBManager;
 
 import java.net.URL;
+import java.util.Optional; // Menambahkan import Optional
 import java.util.ResourceBundle;
 
 public class UmbrellaController implements Initializable {
-    // Variabel FXML diubah untuk mencerminkan skema Grup B
+
     @FXML private TextField txtItem, txtInitial, txtSupply;
     @FXML private TableView<InventoryItem> tableInventory;
     @FXML private TableColumn<InventoryItem, String> colName;
@@ -38,9 +39,10 @@ public class UmbrellaController implements Initializable {
         // ==============================================================================
 
         // --- TULIS KODE ANDA DI BAWAH INI ---
-
-
-
+        colName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
+        colInitial.setCellValueFactory(new PropertyValueFactory<>("initialStock"));
+        colSupply.setCellValueFactory(new PropertyValueFactory<>("newSupply")); // TYPO DIPERBAIKI (sebelumnya newSuply)
+        colFinal.setCellValueFactory(new PropertyValueFactory<>("finalStock"));
 
         // ==============================================================================
         // TODO 2: LISTENER KLIK BARIS TABEL (SELECTION MODEL)
@@ -54,13 +56,22 @@ public class UmbrellaController implements Initializable {
         // 5. Matikan (disable) TextField 'txtItem' agar pengguna tidak bisa mengubah
         //    nama item (Primary Key) saat sedang mengedit data.
         // ==============================================================================
-
         tableInventory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
-                // --- TULIS KODE ANDA DI BAWAH INI ---
+
+                selectedItem = newVal;
 
 
+                txtItem.setText(newVal.getItemName());
 
+
+                txtInitial.setText(String.valueOf(newVal.getInitialStock()));
+
+
+                txtSupply.setText(String.valueOf(newVal.getNewSupply()));
+
+
+                txtItem.setDisable(true);
             }
         });
 
@@ -85,7 +96,28 @@ public class UmbrellaController implements Initializable {
 
         // --- TULIS KODE ANDA DI BAWAH INI ---
 
+        if (selectedItem != null) {
+            try {
 
+                int initial = Integer.parseInt(txtInitial.getText());
+                int supply = Integer.parseInt(txtSupply.getText());
+
+
+                int finalStock = initial + supply;
+
+
+                InventoryItem updatedItem = new InventoryItem(selectedItem.getItemName(), initial, supply, finalStock);
+
+
+                if (db.updateItem(updatedItem)) {
+                    refreshTable();
+                    clearFields();
+                }
+            } catch (NumberFormatException e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Stock dan Supply wajib menggunakan angka valid!");
+                alert.show();
+            }
+        }
     }
 
     @FXML
@@ -103,8 +135,32 @@ public class UmbrellaController implements Initializable {
         // ==============================================================================
 
         // --- TULIS KODE ANDA DI BAWAH INI ---
+        try {
+
+            int initial = Integer.parseInt(txtInitial.getText());
+            int supply = Integer.parseInt(txtSupply.getText());
+
+            int finalStock = initial + supply;
 
 
+            String itemName = txtItem.getText();
+
+            if(itemName.isEmpty()) {
+                new Alert(Alert.AlertType.ERROR, "Harap isi dengan benar!").show();
+                return;
+            }
+
+
+            InventoryItem newItem = new InventoryItem(itemName, initial, supply, finalStock);
+
+            db.addItem(newItem);
+
+            refreshTable();
+            clearFields();
+        } catch (NumberFormatException e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Mohon isi dengan angka !");
+            alert.show();
+        }
     }
 
     @FXML
@@ -123,11 +179,35 @@ public class UmbrellaController implements Initializable {
         // ==============================================================================
 
         // --- TULIS KODE ANDA DI BAWAH INI ---
+        InventoryItem itemToDelete = tableInventory.getSelectionModel().getSelectedItem();
 
 
+        if (itemToDelete != null) {
+
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Konfirmasi Penghapusan");
+            alert.setHeaderText("Hapus Data Inventaris");
+            alert.setContentText("Apakah Anda yakin ingin menghapus " + itemToDelete.getItemName() + " dari terminal?");
+
+            Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+
+                if (db.deleteItem(itemToDelete.getItemName())) {
+
+                    masterData.remove(itemToDelete);
+
+                    clearFields();
+                }
+            }
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Peringatan Sistem");
+            alert.setHeaderText("Tidak ada item yang dipilih");
+            alert.setContentText("Silakan klik salah satu item pada tabel inventaris terlebih dahulu sebelum menghapus!");
+            alert.showAndWait();
+        }
     }
 
-    // Logout
     @FXML
     private void handleLogout() {
         try {
@@ -145,6 +225,7 @@ public class UmbrellaController implements Initializable {
         txtSupply.clear();
         txtItem.setDisable(false);
         selectedItem = null;
+        tableInventory.getSelectionModel().clearSelection();
     }
 
     // Refresh Table

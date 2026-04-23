@@ -1,15 +1,19 @@
 package org.rplbo.app.ug8.Controller;
 
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.event.ActionEvent;
 import org.rplbo.app.ug8.UmbrellaApp;
 import org.rplbo.app.ug8.UmbrellaDBManager;
 
+import java.io.IOException;
+
 public class LoginController {
     @FXML private TextField txtUsername;
     @FXML private PasswordField txtPassword;
-    @FXML private Label lblStatus;
+    private static final String CORRECT_USERNAME = "hunk";
+    private static final String CORRECT_PASSWORD = "123";
 
     @FXML
     private void handleLogin(ActionEvent event) {
@@ -27,6 +31,31 @@ public class LoginController {
 
         // --- TULIS KODE ANDA DI BAWAH INI ---
 
+        Button tombol = (Button) event.getSource();
+        String username = txtUsername.getText();
+        String password = txtPassword.getText();
+        }
+
+    @FXML
+    protected void btnLogin() throws IOException{
+        Alert a;
+        if (txtUsername.getText().equals(CORRECT_USERNAME) && txtPassword.getText().equals(CORRECT_PASSWORD)) {
+            a = new Alert(Alert.AlertType.INFORMATION);
+            a.setContentText(txtUsername.getText());
+            a.setContentText(txtPassword.getText());
+            a.setHeaderText("Information");
+            a.setContentText("Login Success!");
+            a.setContentText("Welcome " +  txtUsername.getText());
+            a.showAndWait();
+            UmbrellaApp.switchScene("umbrella-view.fxml");
+        } else {
+            a = new Alert(Alert.AlertType.ERROR);
+            a.setHeaderText("Error");
+            a.setContentText("Login gagal!! Silahkan coba lagi.");
+            a.showAndWait();
+            txtUsername.requestFocus();
+        }
+    }
+
 
     }
-}
